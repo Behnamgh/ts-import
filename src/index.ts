@@ -9,15 +9,20 @@ export interface ICompilerOptions {
     flags?: string[];
 }
 
+export interface ICompilationContext {
+    cwd: string;
+    tsDir: string;
+    tsPath: string;
+}
+
 /**
  * Compiles TypeScript file to JavaScript, stores it cached and reads js from cache if available.
  * @param scriptPath path to script to store in cache equivalent path.
  * @param cacheDir
  */
 export class Compiler {
-    static defaultCacheDir = path.resolve(__dirname, `../cache`);
     static defaults = {
-        cacheDir: Compiler.defaultCacheDir,
+        cacheDir: path.resolve(__dirname, `../cache`),
         flags: [
             `--downlevelIteration`,
             `--emitDecoratorMetadata`,
@@ -38,43 +43,57 @@ export class Compiler {
      * Compile scripts.ts to scripts.js, check cache.
      * @param scriptsDir
      */
-    async compile(tsPath: string = ``): Promise<any> {
-        const { logger } = this.options;
+    async compile(relativeTsPath: string = ``): Promise<any> {
+        // Check if file exists.
+        const cwd = process.cwd();
+        const tsPath = path.resolve(cwd, relativeTsPath);
 
-        const absoluteTsPath = path.resolve(process.cwd(), tsPath);
         if (!fs.existsSync(tsPath)) {
             throw new Error(`File ${tsPath} not found to compile.`);
         }
 
-        const absoluteTsDir = path.dirname(absoluteTsPath);
-
-        const tsFileName = path.basename(absoluteTsPath);
-        const jsFileName = tsFileName.replace(/\.[^/.]+$/, `.js`);
-
-        const cacheDir = path.resolve(this.options.cacheDir, `.${absoluteTsDir}`);
-        const cachedFile = path.resolve(cacheDir, jsFileName);
+        // Get file name and directory path.
+        const tsDir = path.dirname(tsPath);
 
         // Switch directory to scripts.ts to resolve node_modules during require.
-        const cwd = process.cwd();
-        process.chdir(absoluteTsDir);
+        process.chdir(tsDir);
+
+        const compiled = await this.compileOrFail({ cwd, tsDir, tsPath }).catch((err) => {
+            // Change directory back to cwd to prevent side-effects on error.
+            process.chdir(cwd);
+            throw err;
+        });
+
+        // Change directory back to cwd and return compiled.
+        process.chdir(cwd);
+        return compiled;
+    }
+
+    async compileOrFail(ctx: ICompilationContext) {
+        const { logger } = this.options;
+        const { tsDir, tsPath } = ctx;
+
+        const tsFileName = path.basename(tsPath);
+        const jsFileName = tsFileName.replace(/\.[^/.]+$/, `.js`);
+
+        const cacheDir = path.resolve(this.options.cacheDir, `.${tsDir}`);
+        const cachedFile = path.resolve(cacheDir, jsFileName);
 
         // Check if cached scripts.js exist.
         logger?.debug(`Looking for cached file at ${cachedFile}`);
         if (fs.existsSync(cachedFile)) {
             // Cache is correct, do nothing.
-            const tsWasModified = await this.wasModified(absoluteTsPath, cachedFile);
+            const tsWasModified = await this.wasModified(tsPath, cachedFile);
             if (!tsWasModified) {
                 logger?.debug(`File was not modified, importing.`);
                 const compiled = await import(cachedFile);
-                process.chdir(cwd);
                 return compiled;
             }
 
             // Cache is incorrect, rebuild.
             logger?.debug(`File was modified, building and importing.`);
-            await this.buildCache(absoluteTsPath);
+            await this.buildCache(tsPath);
             const compiled = await import(cachedFile);
-            process.chdir(cwd);
             return compiled;
         }
 
@@ -88,9 +107,8 @@ export class Compiler {
 
         // Build cache.
         logger?.debug(`File was not cached, caching...`);
-        await this.buildCache(absoluteTsPath);
+        await this.buildCache(tsPath);
         const compiled = await import(cachedFile);
-        process.chdir(cwd);
         return compiled;
     }
 
@@ -99,7 +117,7 @@ export class Compiler {
 
         // Compile new scripts.ts to .js.
         return new Promise((resolve, reject) => {
-            const compileCommand = `pnpx tsc ${absoluteTsPath} --rootDir / --outDir ${cacheDir} ${flags.join(' ')}`;
+            const compileCommand = `npx -p typescript tsc '${absoluteTsPath}' --rootDir / --outDir '${cacheDir}' ${flags.join(' ')}`;
             logger?.info(`Compiling ${absoluteTsPath}`);
             logger?.debug(`Command: ${compileCommand}`);
 

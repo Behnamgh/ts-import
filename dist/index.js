@@ -70,29 +70,51 @@ var Compiler = /** @class */ (function () {
      * Compile scripts.ts to scripts.js, check cache.
      * @param scriptsDir
      */
-    Compiler.prototype.compile = function (tsPath) {
-        if (tsPath === void 0) { tsPath = ""; }
+    Compiler.prototype.compile = function (relativeTsPath) {
+        if (relativeTsPath === void 0) { relativeTsPath = ""; }
         return __awaiter(this, void 0, void 0, function () {
-            var logger, absoluteTsPath, absoluteTsDir, tsFileName, jsFileName, cacheDir, cachedFile, cwd, tsWasModified, compiled_1, compiled_2, compiled;
+            var cwd, tsPath, tsDir, compiled;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        cwd = process.cwd();
+                        tsPath = path.resolve(cwd, relativeTsPath);
+                        if (!fs.existsSync(tsPath)) {
+                            throw new Error("File " + tsPath + " not found to compile.");
+                        }
+                        tsDir = path.dirname(tsPath);
+                        // Switch directory to scripts.ts to resolve node_modules during require.
+                        process.chdir(tsDir);
+                        return [4 /*yield*/, this.compileOrFail({ cwd: cwd, tsDir: tsDir, tsPath: tsPath })["catch"](function (err) {
+                                // Change directory back to cwd to prevent side-effects on error.
+                                process.chdir(cwd);
+                                throw err;
+                            })];
+                    case 1:
+                        compiled = _a.sent();
+                        // Change directory back to cwd and return compiled.
+                        process.chdir(cwd);
+                        return [2 /*return*/, compiled];
+                }
+            });
+        });
+    };
+    Compiler.prototype.compileOrFail = function (ctx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var logger, tsDir, tsPath, tsFileName, jsFileName, cacheDir, cachedFile, tsWasModified, compiled_1, compiled_2, compiled;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         logger = this.options.logger;
-                        absoluteTsPath = path.resolve(process.cwd(), tsPath);
-                        if (!fs.existsSync(tsPath)) {
-                            throw new Error("File " + tsPath + " not found to compile.");
-                        }
-                        absoluteTsDir = path.dirname(absoluteTsPath);
-                        tsFileName = path.basename(absoluteTsPath);
+                        tsDir = ctx.tsDir, tsPath = ctx.tsPath;
+                        tsFileName = path.basename(tsPath);
                         jsFileName = tsFileName.replace(/\.[^/.]+$/, ".js");
-                        cacheDir = path.resolve(this.options.cacheDir, "." + absoluteTsDir);
+                        cacheDir = path.resolve(this.options.cacheDir, "." + tsDir);
                         cachedFile = path.resolve(cacheDir, jsFileName);
-                        cwd = process.cwd();
-                        process.chdir(absoluteTsDir);
                         // Check if cached scripts.js exist.
                         logger === null || logger === void 0 ? void 0 : logger.debug("Looking for cached file at " + cachedFile);
                         if (!fs.existsSync(cachedFile)) return [3 /*break*/, 6];
-                        return [4 /*yield*/, this.wasModified(absoluteTsPath, cachedFile)];
+                        return [4 /*yield*/, this.wasModified(tsPath, cachedFile)];
                     case 1:
                         tsWasModified = _a.sent();
                         if (!!tsWasModified) return [3 /*break*/, 3];
@@ -100,18 +122,16 @@ var Compiler = /** @class */ (function () {
                         return [4 /*yield*/, Promise.resolve().then(function () { return require(cachedFile); })];
                     case 2:
                         compiled_1 = _a.sent();
-                        process.chdir(cwd);
                         return [2 /*return*/, compiled_1];
                     case 3:
                         // Cache is incorrect, rebuild.
                         logger === null || logger === void 0 ? void 0 : logger.debug("File was modified, building and importing.");
-                        return [4 /*yield*/, this.buildCache(absoluteTsPath)];
+                        return [4 /*yield*/, this.buildCache(tsPath)];
                     case 4:
                         _a.sent();
                         return [4 /*yield*/, Promise.resolve().then(function () { return require(cachedFile); })];
                     case 5:
                         compiled_2 = _a.sent();
-                        process.chdir(cwd);
                         return [2 /*return*/, compiled_2];
                     case 6:
                         // Create cache directory if it does not exist.
@@ -123,13 +143,12 @@ var Compiler = /** @class */ (function () {
                         }
                         // Build cache.
                         logger === null || logger === void 0 ? void 0 : logger.debug("File was not cached, caching...");
-                        return [4 /*yield*/, this.buildCache(absoluteTsPath)];
+                        return [4 /*yield*/, this.buildCache(tsPath)];
                     case 7:
                         _a.sent();
                         return [4 /*yield*/, Promise.resolve().then(function () { return require(cachedFile); })];
                     case 8:
                         compiled = _a.sent();
-                        process.chdir(cwd);
                         return [2 /*return*/, compiled];
                 }
             });
@@ -139,7 +158,7 @@ var Compiler = /** @class */ (function () {
         var _a = this.options, flags = _a.flags, cacheDir = _a.cacheDir, logger = _a.logger;
         // Compile new scripts.ts to .js.
         return new Promise(function (resolve, reject) {
-            var compileCommand = "pnpx tsc " + absoluteTsPath + " --rootDir / --outDir " + cacheDir + " " + flags.join(' ');
+            var compileCommand = "npx -p typescript tsc '" + absoluteTsPath + "' --rootDir / --outDir '" + cacheDir + "' " + flags.join(' ');
             logger === null || logger === void 0 ? void 0 : logger.info("Compiling " + absoluteTsPath);
             logger === null || logger === void 0 ? void 0 : logger.debug("Command: " + compileCommand);
             childProcess.exec(compileCommand, function (err, stdout, stderr) {
@@ -173,9 +192,8 @@ var Compiler = /** @class */ (function () {
             });
         });
     };
-    Compiler.defaultCacheDir = path.resolve(__dirname, "../cache");
     Compiler.defaults = {
-        cacheDir: Compiler.defaultCacheDir,
+        cacheDir: path.resolve(__dirname, "../cache"),
         flags: [
             "--downlevelIteration",
             "--emitDecoratorMetadata",
