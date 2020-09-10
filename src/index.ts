@@ -61,6 +61,7 @@ export class Compiler {
         const compiled = await this.compileOrFail({ cwd, tsDir, tsPath }).catch((err) => {
             // Change directory back to cwd to prevent side-effects on error.
             process.chdir(cwd);
+            console.error(`ts-import: Error`, err);
             throw err;
         });
 
