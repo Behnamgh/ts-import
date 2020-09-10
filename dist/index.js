@@ -88,6 +88,7 @@ var Compiler = /** @class */ (function () {
                         return [4 /*yield*/, this.compileOrFail({ cwd: cwd, tsDir: tsDir, tsPath: tsPath })["catch"](function (err) {
                                 // Change directory back to cwd to prevent side-effects on error.
                                 process.chdir(cwd);
+                                console.error("ts-import: Error", err);
                                 throw err;
                             })];
                     case 1:
