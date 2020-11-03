@@ -1,7 +1,7 @@
 import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { defaults } from 'ts-options-defaults';
+import { defaults } from 'options-defaults';
 
 export interface ICompilerOptions {
     logger?: Partial<Console>;
