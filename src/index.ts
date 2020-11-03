@@ -118,7 +118,7 @@ export class Compiler {
 
         // Compile new scripts.ts to .js.
         return new Promise((resolve, reject) => {
-            const compileCommand = `npx -p typescript tsc '${absoluteTsPath}' --rootDir / --outDir '${cacheDir}' ${flags.join(' ')}`;
+            const compileCommand = `npx -p typescript tsc --project tsconfig.json '${absoluteTsPath}' --rootDir / --outDir '${cacheDir}' ${flags.join(' ')}`;
             logger?.info(`Compiling ${absoluteTsPath}`);
             logger?.debug(`Command: ${compileCommand}`);
 
