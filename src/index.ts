@@ -122,6 +122,7 @@ export class Compiler {
             const compileCommand = this.options.absoluteTsConfigPath ? 
             `npx -p typescript tsc --project ${this.options.absoluteTsConfigPath}` : 
             `npx -p typescript tsc '${absoluteTsPath}' --rootDir / --outDir '${cacheDir}' ${flags.join(' ')}`;
+            
             logger?.info(`Compiling ${absoluteTsPath}`);
             logger?.debug(`Command: ${compileCommand}`);
 

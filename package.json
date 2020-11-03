@@ -15,7 +15,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "dependencies": {
-        "ts-options-defaults": "workspace:*"
+    "options-defaults": "^2.0.9"
     },
     "devDependencies": {
         "@radrat-scripts/package": "workspace:*",
