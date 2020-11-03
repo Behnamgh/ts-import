@@ -1,6 +1,7 @@
 export interface ICompilerOptions {
     logger?: Partial<Console>;
     cacheDir?: string;
+    absoluteTsConfigPath?: string;
     flags?: string[];
 }
 export interface ICompilationContext {

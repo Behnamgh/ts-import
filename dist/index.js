@@ -23,7 +23,7 @@ exports.tsImport = exports.Compiler = void 0;
 const childProcess = __importStar(require("child_process"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
-const ts_options_defaults_1 = require("ts-options-defaults");
+const options_defaults_1 = require("options-defaults");
 /**
  * Compiles TypeScript file to JavaScript, stores it cached and reads js from cache if available.
  * @param scriptPath path to script to store in cache equivalent path.
@@ -31,7 +31,7 @@ const ts_options_defaults_1 = require("ts-options-defaults");
  */
 class Compiler {
     constructor(options) {
-        this.options = ts_options_defaults_1.defaults(Compiler.defaults, options);
+        this.options = options_defaults_1.defaults(Compiler.defaults, options);
     }
     /**
      * Compile scripts.ts to scripts.js, check cache.
