@@ -98,9 +98,9 @@ class Compiler {
         const { flags, cacheDir, logger } = this.options;
         // Compile new scripts.ts to .js.
         return new Promise((resolve, reject) => {
-            const compileCommand = this.options.absoluteTsConfigPath ?
-                `npx -p typescript tsc --project ${this.options.absoluteTsConfigPath}` :
-                `npx -p typescript tsc '${absoluteTsPath}' --rootDir / --outDir '${cacheDir}' ${flags.join(' ')}`;
+            const compileCommand = this.options.absoluteTsConfigPath
+                ? `npx -p typescript tsc --project ${this.options.absoluteTsConfigPath}`
+                : `npx -p typescript tsc '${absoluteTsPath}' --rootDir / --outDir '${cacheDir}' ${flags.join(" ")}`;
             logger === null || logger === void 0 ? void 0 : logger.info(`Compiling ${absoluteTsPath}`);
             logger === null || logger === void 0 ? void 0 : logger.debug(`Command: ${compileCommand}`);
             childProcess.exec(compileCommand, (err, stdout, stderr) => {
@@ -112,7 +112,7 @@ class Compiler {
                 if (stdout.trim()) {
                     logger === null || logger === void 0 ? void 0 : logger.log(stdout);
                 }
-                if (stderr.trim()) {
+                if (stderr.trim() && !stderr.toString().includes("npx: installed")) {
                     logger === null || logger === void 0 ? void 0 : logger.error(stderr);
                     reject(stderr);
                     return;
@@ -122,7 +122,10 @@ class Compiler {
         });
     }
     async wasModified(tsFilePath, jsFilePath) {
-        const [tsFileStat, jsFileStat] = await Promise.all([fs.promises.stat(tsFilePath), fs.promises.stat(jsFilePath)]);
+        const [tsFileStat, jsFileStat] = await Promise.all([
+            fs.promises.stat(tsFilePath),
+            fs.promises.stat(jsFilePath),
+        ]);
         return tsFileStat.mtimeMs > jsFileStat.mtimeMs;
     }
 }
