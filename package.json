@@ -1,6 +1,6 @@
 {
     "name": "ts-import",
-    "version": "2.0.8-0.1",
+    "version": "2.0.8-0.2",
     "description": "Import (compile and cache on the fly) TypeScript files dynamically with ease.",
     "keywords": [
         "compile",
